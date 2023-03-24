@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>DODGE</title>
+    <!--style css 파일 사용-->
+    <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}">
+</head>
+
+<div class='bg'>
+<!--휠 스크롤이 나오지 않도록 body 설정-->
+<body style="overflow:hidden;">
+    <div class="dodge_container">
+        <div class="header">
+            <h1><strong>Dodge</strong></h1>
+        </div>
+    </div>
+    <canvas id="canvas" width="400" height="400" style="background:black; margin-left:775px; margin-top:100px";>
+        HTML5 Canvas를 지원하지 않습니다.
+    </canvas>
+      <!--웹페이지에서 LED의 동작을 제어하는 함수-->
+      <script>   
+        function led_on() {
+            fetch("/LED/ON")
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    let result = document.querySelector("#result");
+                    if (data == "ok") {
+                        result.innerHTML = "<h1>LED is running</h1>"
+                    } else {
+                        result.innerHTML = "<h1>error</h1>"
+                    }
+                });
+        }
+        function led_off() {
+            fetch("/LED/OFF")
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    let result = document.querySelector("#result");
+                    if (data == "ok") {
+                        result.innerHTML = "<h1>LED is stopping</h1>"
+                    } else {
+                        result.innerHTML = "<h1>error</h1>"
+                    }
+                });
+        }
+        function pwm_dodge() {
+            fetch("/PWM/DODGE")
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    let result = document.querySelector("#result");
+                    if (data == "ok") {
+                        result.innerHTML = "<h1>Burser ON</h1>"
+                    } else {
+                        result.innerHTML = "<h1>error</h1>"
+                    }
+                });
+        }
+      </script>
+    <script>
+        var canvas;
+        var ctx;
+        //변수 설정
+        // 게임의 상태
+        var STATE_WAIT = 0;
+        var STATE_RUN = 1;
+        var STATE_GAMEOVER = 2;
+        //게임 대기 상태
+        var state = STATE_WAIT;
+
+        // 캐릭터
+        var spaceShip;
+        //캐릭터의 x, y좌표
+        var sx, sy;
+        var SW=13, SH=16;
+        //캐릭터의 각도
+        var angle = 0;
+
+        // 장애물
+        //장애물 선언
+        var arMete = new Array();
+        //장애물의 색상 리스트
+        var meteColor = [ "yellow", "lightgreen", "gray", "blue", "orange" ];
+        //장애물의 개수
+        var NUM = 60;
+        // 키 눌림 상태
+        var keyPressed = [];
+        // 경과 시간
+        var oldTime;
+        var startTime;
+        var totalTime;
+
+        // 페이지 로드가 완료된 이후 스크립트를 실행하기 위해 window.onload 이벤트에 캔버스를 붙여서 호출
+        window.onload = function() {
+             canvas = document.getElementById("canvas");
+             if (canvas == null || canvas.getContext == null) return;
+             ctx = canvas.getContext("2d");
+             //캐릭터에 이미지 삽입
+             spaceShip = new Image();
+             spaceShip.src = "https://png.pngtree.com/thumb_back/fw800/background/20210207/pngtree-red-simple-solid-color-background-image_556966.jpg";
+             setInterval(runGame, 30);
+        }
+
+        // 키를 꾹 눌렀을 때 키 입력
+        window.onkeydown = function(e) {
+             keyPressed[e.keyCode] = true;
+        }
+
+        // 키를 뗐을 때 키 입력
+        window.onkeyup = function(e) {
+             keyPressed[e.keyCode] = false;
+        }
+
+        // 게임 시작. 장애물 난수로 배치하고 시간 리셋
+        //게임 재시작 시에도 해당 함수 호출
+        function startGame() {
+             arMete.length = 0;
+             // 장애물의 개수만큼 반복 실행
+             for (var i = 0;i < NUM; i++) {
+                // 장애물 추가
+                  arMete.push({
+                       //장애물을 난수로 배치
+                       x:Math.random() * canvas.width,
+                       y: (i < NUM/2 ? 20 : canvas.height-20),
+                       vx:Math.random() * 200 - 100,
+                       vy:Math.random() * 200 - 100,
+                       color:Math.floor(Math.random() * 5)
+                  });
+             }
+             // 캐릭터의 시작 x, y좌표(캔버스의 가로 길이/2, 캔버스의 세로 길이/2)
+             sx = canvas.width/2;
+             sy = canvas.height/2;
+             //시간 리셋
+             startTime = getTime();
+             oldTime = getTime();
+        }
+
+        // 현재 시간 구함
+        function getTime() {
+             var date = new Date();
+             var time = date.getTime();
+             delete date;
+             return time;
+        }
+
+        // 게임 진행
+        function runGame() {
+            // 게임의 진행 상태에 대해서 switch 문 사용
+             switch (state) {
+             case STATE_WAIT:
+             // 게임 상태가 GAME OVER일 때
+             case STATE_GAMEOVER:
+                  led_off();
+                  // 키코드 13 : Enter 키
+                  // 엔터 키가 눌리면
+                  if (keyPressed[13] == true) {
+                       if (spaceShip.complete == false) return;
+                       startGame(); // startGame 함수를 호출해 게임 초기화
+                       state = STATE_RUN; // 상태를 RUN으로 변경
+                  }
+                  break;
+             case STATE_RUN:
+                  led_on();
+                  // 이동
+                  // 위쪽 방향키(키코드 38 : 위쪽 방향키)를 입력했을 때
+                  if (keyPressed[38]) {
+                    //캐릭터의 y좌표를 3만큼 감소
+                       sy -= 3;
+                       angle = 0;
+                  }
+                  //키코드 40(아래쪽 방향키)를 입력했을 때
+                  if (keyPressed[40]) {
+                    //캐릭터의 y좌표를 3만큼 증가
+                       sy += 3;
+                    //캐릭터를 180도만큼 회전
+                       angle = 180;
+                  }
+                  //키코드 37(왼쪽 방향키)를 입력했을 때
+                  if (keyPressed[37]) {
+                    //캐릭터의 x좌표를 3만큼 감소
+                       sx -= 3;
+                    //캐릭터를 270도만큼 회전
+                       angle = 270;
+                  }
+                  //키코드 39(오른쪽 방향키)를 입력했을 때
+                  if (keyPressed[39]) {
+                    //캐릭터의 x좌표를 3만큼 증가
+                       sx += 3;
+                    //캐릭터를 90도만큼 회전
+                       angle = 90;
+                  }
+
+                  // 대각선 이동시의 각도 계산
+                  //위쪽 방향키와 오른쪽 방향키가 동시에 입력됐을 때
+                  if (keyPressed[38] && keyPressed[39]) {
+                    //캐릭터를 45도만큼 회전
+                       angle = 45;
+                  }
+
+                  //오른쪽 방향키와 아래쪽 방향키가 동시에 입력됐을 때
+                  if (keyPressed[39] && keyPressed[40]) {
+                    //캐릭터를 135도만큼 회전
+                       angle = 135;
+                  }
+
+                  //아래쪽 방향키와 왼쪽 방향키가 동시에 입력됐을 때
+                  if (keyPressed[40] && keyPressed[37]) {
+                    //캐릭터를 225도만큼 회전
+                       angle = 225;
+                  }
+
+                  //왼쪽 방향키와 위쪽 방향키가 동시에 입력됐을 때
+                  if (keyPressed[37] && keyPressed[38]) {
+                    //캐릭터를 315도만큼 회전
+                       angle = 315;
+                  }
+
+                  // 경과 시간 구함
+                  var ellapse = getTime() -oldTime;
+                  oldTime = getTime();
+
+                  // 장애물의 이동
+                  for (var i = 0;i < NUM; i++) {
+                       var mx = arMete[i].vx * ellapse / 1000;
+                       var my = arMete[i].vy * ellapse / 1000;
+                       arMete[i].x += mx;
+                       arMete[i].y += my;
+                       if (arMete[i].x > canvas.width) arMete[i].x=0;
+                       if (arMete[i].x < 0) arMete[i].x=canvas.width;
+                       if (arMete[i].y > canvas.height) arMete[i].y=0;
+                       if (arMete[i].y < 0) arMete[i].y=canvas.height;
+
+                       // 충돌 판정
+                       var mx = arMete[i].x;
+                       var my = arMete[i].y;
+                       if (mx > sx-SW/2 && mx < sx+SW/2
+                           && my > sy-SH/2 && my < sy+SH/2) {
+                           //게임 진행 상태를 GAME OVER로 변경
+                           state = STATE_GAMEOVER;
+                           pwm_dodge();
+                           break;
+                       }
+                  }                
+                  break;
+             }
+             draw();
+        }
+
+        // 문자열 출력 함수
+        function drawText(ctx, text, x, y, font, color, align, base) {
+             if (font != undefined) ctx.font = font;
+             if (color != undefined) ctx.fillStyle = color;
+             if (align != undefined) ctx.textAlign = align;
+             if (base != undefined) ctx.textBaseline = base;
+             ctx.fillText(text, x, y);
+        }
+
+        // 화면 그림
+        function draw() {
+             ctx.clearRect(0, 0, canvas.width, canvas.height);
+             switch (state) {
+             //대기 상태일 때
+             case STATE_WAIT:
+                  //화면 중앙에 다음 텍스트 출력
+                  drawText(ctx, "Dodge", canvas.width/2, canvas.height/2 - 60,
+                       "30px arial", "yellow", "center", "middle");
+                  drawText(ctx, "Press Enter to Start",
+                       canvas.width/2, canvas.height/2 - 20, "20px arial", "white");
+                  drawText(ctx, "PI 먹고 노라라!",
+                       canvas.width/2, canvas.height/2 + 20, "15px arial", "white");
+                  break;
+             case STATE_RUN: // RUN 상태일 때는 아무 텍스트 출력하지 않음
+             case STATE_GAMEOVER: // GAME OVER 상태일 때
+                  // 장애물 그림
+                  for (var i = 0;i < NUM; i++) {
+                       ctx.beginPath();
+                       ctx.arc(arMete[i].x, arMete[i].y,2,0,2*Math.PI);
+                       ctx.fillStyle=meteColor[arMete[i].color];
+                       ctx.fill();
+                  }
+
+                  // 캐릭터 그림
+                  ctx.save();
+                  ctx.translate(sx, sy);
+                  ctx.rotate(angle * Math.PI / 180);
+                  ctx.translate(-sx, -sy);
+                  ctx.drawImage(spaceShip, sx-SW/2, sy-SH/2,10,10);
+                  ctx.restore();
+
+                  // 게임 상태가 GAME OVER일 때
+                  if (state == STATE_GAMEOVER) {
+                        // 화면 중앙에 다음 텍스트 출력 
+                        drawText(ctx, "Game Over", canvas.width/2, canvas.height/2,
+                           "30px arial", "white", "center", "middle");
+                        drawText(ctx, "Press Enter to Restart", canvas.width/2,canvas.height/2+40,
+                           "30px arial", "white", "center", "middle");
+                  } else {
+                       // 경과 시간 갱신
+                       totalTime = (getTime() - startTime) / 1000;
+                  }
+
+                  // 경과 시간 표시
+                  drawText(ctx, totalTime, canvas.width - 10, 10,
+                       "20px arial", "yellow", "right", "top");
+                  break;
+             }
+        }
+    </script>
+    <div class='stage_btn'>
+        <div>
+            <!--돌아가기 버튼 클릭 시 SelectPage로 이동-->
+            <button onclick="location.href='../SelectPage'"><strong>돌아가기</strong></button>
+        </div>
+    </div>
+</body>
+</div>
+
+</html>

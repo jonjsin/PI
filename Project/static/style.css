@@ -1,0 +1,135 @@
+.bg {
+    height: 1080px;
+    width: 1980px;
+    background-image: url("https://opgg-com-image.akamaized.net/attach/images/20200220070854.325386.jpg");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.header {
+    font-size: x-large;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+
+.main_container {
+    position: relative;
+    top: 300px;
+    left: 850px;
+    bottom: 4px;
+    right: 8px;
+    margin: 0 auto;
+}
+
+.select_container {
+    position: relative;
+    top: 150px;
+    left: 850px;
+    bottom: 4px;
+    right: 8px;
+    margin: 0 auto;
+}
+
+.dodge_container {
+    position: relative;
+    top: 100px;
+    left: 910px;
+    bottom: 4px;
+    right: 8px;
+    margin: 0 auto;
+}
+
+.main {
+    display: flex;
+}
+
+.main div {
+    flex: 1;
+}
+
+.main div button {
+    background-color: floralwhite;
+    border: none;
+    width: 200px;
+    height: 100px;
+    border-radius: 10px;
+    font-size: 30px;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    display: inline-block;
+    position: relative;
+    color: crimson;
+    top: 350px;
+    left: 900px;
+    bottom: 4px;
+    right: 8px;
+}
+
+.main div button:hover {
+    color: white;
+    background-color: crimson;
+}
+
+.select div button {
+    background-color: floralwhite;
+    border: none;
+    width: 200px;
+    height: 100px;
+    border-radius: 10px;
+    font-size: 30px;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    display: inline-block;
+    position: relative;
+    color: crimson;
+    top: 500px;
+    left: 85px;
+    bottom: 4px;
+    right: 8px;
+}
+
+.select div button:hover {
+    color: white;
+    background-color: crimson;
+}
+
+.preview div button {
+    background-color: floralwhite;
+    border: none;
+    width: 150px;
+    height: 80px;
+    border-radius: 10px;
+    font-size: 25px;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    display: inline-block;
+    position: relative;
+    color: crimson;
+    top: 200px;
+    left: 915px;
+    bottom: 4px;
+    right: 8px;
+}
+
+.preview div button:hover {
+    color: white;
+    background-color: crimson;
+}
+
+.stage_btn div button {
+    background-color: floralwhite;
+    border: none;
+    width: 150px;
+    height: 80px;
+    border-radius: 10px;
+    font-size: 25px;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    display: inline-block;
+    position: relative;
+    color: crimson;
+    top: 100px;
+    left: 915px;
+    bottom: 4px;
+    right: 8px;
+}
+
+.stage_btn div button:hover {
+    color: white;
+    background-color: crimson;
+}

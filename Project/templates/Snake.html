@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>SNAKE</title>
+    <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}">
+</head>
+
+<div class='bg'>
+<body style="overflow:hidden;">
+    <div class="dodge_container">
+        <div class="header">
+            <h1><strong>Snake</strong></h1>
+        </div>
+    </div>
+    <canvas id="snake" width="400" height="400" style="background:black; margin-left:775px; margin-top:100px";>
+        HTML5 Canvas를 지원하지 않습니다.
+    </canvas>
+      <script>   
+        function led_on() {
+            fetch("/LED/ON")
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    let result = document.querySelector("#result");
+                    if (data == "ok") {
+                        result.innerHTML = "<h1>LED is running</h1>"
+                    } else {
+                        result.innerHTML = "<h1>error</h1>"
+                    }
+                });
+        }
+        function led_off() {
+            fetch("/LED/OFF")
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    let result = document.querySelector("#result");
+                    if (data == "ok") {
+                        result.innerHTML = "<h1>LED is stopping</h1>"
+                    } else {
+                        result.innerHTML = "<h1>error</h1>"
+                    }
+                });
+        }
+        function pwm_snake() {
+            fetch("/PWM/SNAKE")
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    let result = document.querySelector("#result");
+                    if (data == "ok") {
+                        result.innerHTML = "<h1>Burser ON</h1>"
+                    } else {
+                        result.innerHTML = "<h1>error</h1>"
+                    }
+                });
+        }
+      </script>
+    <script>
+        //각종 변수
+        // 캔버스가 snake 아이디 속성에 접근
+        var canvas = document.getElementById('snake');
+        var context = canvas.getContext('2d');
+        var grid = 16;
+        var count = 0;
+        var snake = {
+          x: 160,
+          y: 160,
+          
+          // 뱀의 이동 속도. x 또는 y 축으로 한 그리드만큼 이동
+          dx: grid,
+          dy: 0,
+          
+          // 뱀의 몸체가 차지하는 영역
+          cells: [],
+          
+          // 뱀의 길이. 사과를 획득할 때마다 1씩 증가
+          maxCells: 4
+        };
+        var apple = {
+          x: 320,
+          y: 320
+        };
+        
+        // 임의의 난수를 구하는 함수
+        function getRandomInt(min, max) {
+          return Math.floor(Math.random() * (max - min)) + min;
+        }
+        
+        // 게임 루프
+        function loop() {
+          requestAnimationFrame(loop);
+        
+          // 15 fps
+          if (++count < 4) {
+            return;
+          }
+        
+          count = 0;
+          context.clearRect(0,0,canvas.width,canvas.height);
+        
+          // 뱀의 속도만큼 뱀 이동
+          snake.x += snake.dx;
+          snake.y += snake.dy;
+        
+          // 뱀이 가로로 화면 밖으로 넘어갈 때 반대편에서 나오도록 설정
+          if (snake.x < 0) {
+            snake.x = canvas.width - grid;
+          }
+          else if (snake.x >= canvas.width) {
+            snake.x = 0;
+          }
+          
+          // 뱀이 세로로 화면 밖으로 넘어갈 때 반대편에서 나오도록 설정
+          if (snake.y < 0) {
+            snake.y = canvas.height - grid;
+          }
+          else if (snake.y >= canvas.height) {
+            snake.y = 0;
+          }
+        
+          // 반대편에서 출력
+          snake.cells.unshift({x: snake.x, y: snake.y});
+        
+          // 화면 밖으로 넘어간 부분은 삭제
+          if (snake.cells.length > snake.maxCells) {
+            snake.cells.pop();
+          }
+        
+          // 사과 그리기
+          // 색깔은 빨간색으로 설정 
+          context.fillStyle = 'red';
+          // 처음 사과를 그릴 땐 (apple.x, apple.y) 좌표에 15,15 크기의 사과 생성
+          context.fillRect(apple.x, apple.y, grid-1, grid-1);
+        
+          // 한 번에 한 셀씩 뱀의 몸통 그리기
+          context.fillStyle = 'green'; // 색깔은 초록색
+          snake.cells.forEach(function(cell, index) {
+            
+            // 그리드보다 1픽셀 작게 뱀의 몸통을 그려서 뱀의 길이를 확인할 수 있도록
+            context.fillRect(cell.x, cell.y, grid-1, grid-1);  
+        
+            // 뱀이 사과를 먹었을 때
+            // 뱀의 x, y좌표와 사과의 x, y좌표가 부딪혔을때
+            if (cell.x === apple.x && cell.y === apple.y) {
+              //뱀의 길이 1만큼 증가
+              led_on(); // led 켜졌다 꺼짐
+              snake.maxCells++;
+              pwm_snake(); // 버저음 출력
+        
+              // 이후 무작위 위치에 (1x1) 크기의 그리드를 가진 사과 출력(캔버스는 400x400 크기에 25x25 그리드를 가짐)
+              apple.x = getRandomInt(0, 25) * grid;
+              apple.y = getRandomInt(0, 25) * grid;
+              led_off();
+            }
+        
+            // for 문으로 뱀의 길이까지 발생하는 모든 충돌 이벤트 확인
+            for (var i = index + 1; i < snake.cells.length; i++) {
+              
+              // 뱀이 자신의 몸에 부딪혔을 때 게임 재시작
+              if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+                snake.x = 160;
+                snake.y = 160;
+                snake.cells = [];
+                snake.maxCells = 4;
+                snake.dx = grid;
+                snake.dy = 0;
+        
+                // 게임을 재시작했을 때 사과의 위치는 무작위로 재조정
+                apple.x = getRandomInt(0, 25) * grid;
+                apple.y = getRandomInt(0, 25) * grid;
+              }
+            }
+          });
+        }
+        
+        // 뱀을 움직이게 하기 위한 키보드 이벤트
+        document.addEventListener('keydown', function(e) {
+          
+          // 왼쪽 방향키를 눌렀을 때
+          if (e.which === 37 && snake.dx === 0) {
+            snake.dx = -grid;
+            snake.dy = 0;
+          }
+          // 위쪽 방향키를 눌렀을 때
+          else if (e.which === 38 && snake.dy === 0) {
+            snake.dy = -grid;
+            snake.dx = 0;
+          }
+          // 오른쪽 방향키를 눌렀을 때
+          else if (e.which === 39 && snake.dx === 0) {
+            snake.dx = grid;
+            snake.dy = 0;
+          }
+          // 아래쪽 방향키를 눌렀을 때
+          else if (e.which === 40 && snake.dy === 0) {
+            snake.dy = grid;
+            snake.dx = 0;
+          }
+        });
+        
+        // 게임 시작
+        requestAnimationFrame(loop);
+    </script>
+    <div class='stage_btn'>
+        <div>
+            <!--돌아가기 버튼 클릭 시 SelectPage로 이동-->
+            <button onclick="location.href='../SelectPage'"><strong>돌아가기</strong></button>
+        </div>
+    </div>
+</body>
+</div>
+
+</html>
